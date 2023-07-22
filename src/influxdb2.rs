@@ -86,6 +86,9 @@ byond_fn!(
                     .as_secs()
                     .to_string();
                 for entry in data {
+                    if entry.name.is_empty() {
+                        continue;
+                    }
                     lines.push(concat_string!("profile,proc=", entry.name, " self=", entry.self_.to_string(), ",total=", entry.total.to_string(), ",real=", entry.real.to_string(), ",over=", entry.over.to_string(), ",calls=", entry.calls.to_string(), ",round_id=", round_id.to_string(), " ", timestamp));
                 }
 
