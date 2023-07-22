@@ -86,7 +86,7 @@ byond_fn!(
                     .as_secs()
                     .to_string();
                 for entry in data {
-                    let mut name = entry.name
+                    let mut name = entry.name;
                     if name.is_empty() {
                         name = String::from("(no_name)");
                     }
