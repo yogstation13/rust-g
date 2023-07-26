@@ -75,12 +75,12 @@ jobs:
         env:
           BYOND_BIN: /home/runner/BYOND/byond/bin
 
-      - name: Build (release) (default features)
+      - name: Build (release) (all features)
         uses: actions-rs/cargo@v1
         with:
           toolchain: stable
           command: build
-          args: --target i686-unknown-linux-gnu --release
+          args: --target i686-unknown-linux-gnu --all-features --release
 
       - uses: actions/upload-artifact@v3
         with:
