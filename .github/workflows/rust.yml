@@ -37,7 +37,7 @@ jobs:
 
 
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     env:
       BYOND_MAJOR: 514
       BYOND_MINOR: 1585
