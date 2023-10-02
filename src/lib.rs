@@ -13,10 +13,10 @@ mod jobs;
 
 #[cfg(feature = "acreplace")]
 pub mod acreplace;
-#[cfg(feature = "cellularnoise")]
-pub mod cellularnoise;
 #[cfg(feature = "binary_space_partition")]
 pub mod binary_space_partition;
+#[cfg(feature = "cellularnoise")]
+pub mod cellularnoise;
 #[cfg(feature = "dbpnoise")]
 pub mod dbpnoise;
 #[cfg(feature = "dmi")]
