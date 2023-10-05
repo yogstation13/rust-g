@@ -1,5 +1,4 @@
 use std::fmt;
-use std::fmt::Write;
 use rand::distributions::WeightedIndex;
 use rand::prelude::*;
 use rand::rngs::StdRng;
@@ -12,11 +11,9 @@ struct RandomRoomLevel {
 }
 
 byond_fn!(fn random_room_generate(width, height, desired_room_count, hash) {
-    match random_room_gen(width, height, desired_room_count, hash) {
-        Ok(s) => Some(s),
-        Err(e) => Some(format!("{e}"))
-    }
+    random_room_gen(width, height, desired_room_count, hash).ok()
 });
+
 fn random_room_gen(width_as_str: &str,
     height_as_str: &str,
     desired_room_count_as_str: &str,
@@ -35,14 +32,7 @@ fn random_room_gen(width_as_str: &str,
 
     let level = RandomRoomLevel::new(width, height, desired_room_count, &mut rng);
 
-
-    let mut string = String::new();
-    for room in &level.all_rooms {
-        let serialized = serde_json::to_string(&room).unwrap();
-        let _ = write!(string, "{}", serialized);
-    }
-
-    Ok(format!("{}",serde_json::to_string(&level.all_rooms)?))
+    Ok(serde_json::to_string(&level.all_rooms)?)
 }
 
 impl RandomRoomLevel {

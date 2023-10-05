@@ -1,5 +1,4 @@
 use std::{fmt, cmp};
-use std::fmt::Write;
 use rand::distributions::WeightedIndex;
 use rand::prelude::*;
 use rand::rngs::StdRng;
@@ -16,11 +15,9 @@ struct BspLevel {
 
 
 byond_fn!(fn bsp_generate(width, height, hash, map_subsection_min_size, map_subsection_min_room_width, map_subsection_min_room_height) {
-    match bsp_gen(width, height, hash, map_subsection_min_size, map_subsection_min_room_width, map_subsection_min_room_height) {
-        Ok(s) => Some(s),
-        Err(e) => Some(format!("{e}"))
-    }
+    bsp_gen(width, height, hash, map_subsection_min_size, map_subsection_min_room_width, map_subsection_min_room_height).ok()
 });
+
 fn bsp_gen(width_as_str: &str,
     height_as_str: &str,
     hash_as_str: &str,
@@ -34,6 +31,7 @@ fn bsp_gen(width_as_str: &str,
     let mut map_subsection_min_size = map_subsection_min_size_as_str.parse::<i32>()?;
     let map_subsection_min_room_width = map_subsection_min_room_width_as_str.parse::<i32>()?;
     let map_subsection_min_room_height = map_subsection_min_room_height_as_str.parse::<i32>()?;
+
     if map_subsection_min_size < map_subsection_min_room_width || map_subsection_min_size < map_subsection_min_room_height{
         map_subsection_min_size = cmp::max(map_subsection_min_room_width, map_subsection_min_room_height) + 1
     }
@@ -44,14 +42,7 @@ fn bsp_gen(width_as_str: &str,
 
     let level = BspLevel::new(width, height, &mut rng, map_subsection_min_size, map_subsection_min_room_width, map_subsection_min_room_height);
 
-    let mut string = String::new();
-    for room in &level.all_rooms {
-        let serialized = serde_json::to_string(&room).unwrap();
-        let _ = write!(string, "{}", serialized);
-        //println!("serialized = {}", serialized);
-    }
-
-    Ok(format!("{}",serde_json::to_string(&level.all_rooms)?))
+    Ok(serde_json::to_string(&level.all_rooms)?)
 }
 
 impl BspLevel {

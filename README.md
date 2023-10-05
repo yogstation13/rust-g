@@ -88,6 +88,7 @@ To get additional features, pass a list to `--features`, for example `--features
 
 The default features are:
 * acreplace: Aho-Corasick string matching and replacement.
+* binary_space_partition: Function to generate "rooms" more or less evenly distributed over a given area.
 * cellularnoise: Function to generate cellular automata-based noise.
 * dmi: DMI manipulations which are impossible from within BYOND.
   Used by the asset cache subsystem to improve load times.
@@ -97,6 +98,7 @@ The default features are:
 * json: Function to check JSON validity.
 * log: Faster log output.
 * noise: 2d Perlin noise.
+* random_room_placement: Function to generate "rooms" randomly placed in a given area, only taking care to not overlap one another.
 * sql: Asynchronous MySQL/MariaDB client library.
 * time: High-accuracy time measuring.
 * toml: TOML parser.
