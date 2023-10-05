@@ -28,13 +28,14 @@ fn bsp_gen(width_as_str: &str,
     let default_hash: u64 = rand::thread_rng().gen();
     let width = width_as_str.parse::<i32>()?;
     let height = height_as_str.parse::<i32>()?;
-    let mut map_subsection_min_size = map_subsection_min_size_as_str.parse::<i32>()?;
     let map_subsection_min_room_width = map_subsection_min_room_width_as_str.parse::<i32>()?;
     let map_subsection_min_room_height = map_subsection_min_room_height_as_str.parse::<i32>()?;
 
-    if map_subsection_min_size < map_subsection_min_room_width || map_subsection_min_size < map_subsection_min_room_height{
-        map_subsection_min_size = cmp::max(map_subsection_min_room_width, map_subsection_min_room_height) + 1
-    }
+    let map_subsection_min_size = cmp::max(
+        map_subsection_min_size_as_str.parse::<i32>()?,
+        cmp::max(map_subsection_min_room_width, map_subsection_min_room_height) + 1
+    );
+
     //let seed: &str = Alphanumeric.sample_string(&mut rand::thread_rng(), 32).as_str();
 
     let mut rng: StdRng = SeedableRng::seed_from_u64(hash_as_str.parse::<usize>()?.try_into().unwrap_or(default_hash));
