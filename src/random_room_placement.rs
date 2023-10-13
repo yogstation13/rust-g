@@ -1,10 +1,10 @@
-use std::fmt;
+use crate::error::Result;
 use rand::distributions::WeightedIndex;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rand::Rng;
 use serde::Serialize;
-use crate::error::Result;
+use std::fmt;
 
 struct RandomRoomLevel {
     level: Level,
@@ -14,19 +14,23 @@ byond_fn!(fn random_room_generate(width, height, desired_room_count, hash) {
     random_room_gen(width, height, desired_room_count, hash).ok()
 });
 
-fn random_room_gen(width_as_str: &str,
+fn random_room_gen(
+    width_as_str: &str,
     height_as_str: &str,
     desired_room_count_as_str: &str,
     hash_as_str: &str,
-    )
-    -> Result<String>{
+) -> Result<String> {
     let default_hash: u64 = rand::thread_rng().gen();
     let width = width_as_str.parse::<usize>()?;
     let height = height_as_str.parse::<usize>()?;
     let desired_room_count = desired_room_count_as_str.parse::<usize>()?;
 
-    let mut rng: StdRng = SeedableRng::seed_from_u64(hash_as_str.parse::<usize>()?.try_into().unwrap_or(default_hash));
-
+    let mut rng: StdRng = SeedableRng::seed_from_u64(
+        hash_as_str
+            .parse::<usize>()?
+            .try_into()
+            .unwrap_or(default_hash),
+    );
 
     let level = RandomRoomLevel::new(width, height, desired_room_count, &mut rng);
 
@@ -34,12 +38,7 @@ fn random_room_gen(width_as_str: &str,
 }
 
 impl RandomRoomLevel {
-    fn new(
-        width: usize,
-        height: usize,
-        desired_room_count: usize,
-        rng: &mut StdRng,
-    ) -> Level {
+    fn new(width: usize, height: usize, desired_room_count: usize, rng: &mut StdRng) -> Level {
         let level = Level::new(width, height);
 
         let mut map = RandomRoomLevel { level };
@@ -81,10 +80,17 @@ impl RandomRoomLevel {
             }
 
             let mut collides = false;
-            let room = Room::new(format!("ruin room: {}", self.level.rooms.len()), x, y, width, height);
+
+            let room = Room::new(
+                format!("RRPS room: {}", self.level.rooms.len()),
+                x,
+                y,
+                width,
+                height,
+            );
 
             for other_room in &self.level.rooms {
-                if room.intersects(&other_room){
+                if room.intersects(&other_room) {
                     collides = true;
                     break;
                 }
@@ -98,6 +104,13 @@ impl RandomRoomLevel {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum TileType {
+    Space = 0,
+    Floor = 1,
+    Wall = 2,
+}
+
 pub struct Level {
     width: usize,
     height: usize,
@@ -106,18 +119,8 @@ pub struct Level {
     increment: usize,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum TileType {
-    Space = 0,
-    Floor = 1,
-    Wall = 2,
-}
-
 impl Level {
-    fn new(
-        width: usize,
-        height: usize,
-    ) -> Self {
+    fn new(width: usize, height: usize) -> Self {
         let mut new_level = Level {
             width,
             height,
@@ -131,7 +134,7 @@ impl Level {
 
     fn update_board(&mut self) -> Vec<Vec<usize>> {
         let mut new_board = Vec::new();
-        self.increment+=1;
+        self.increment += 1;
         for _ in 0..self.height {
             let gen_floor_first = true;
 
@@ -139,7 +142,6 @@ impl Level {
             if !gen_floor_first {
                 row = vec![TileType::Space as usize; self.width as usize];
             }
-
 
             new_board.push(row);
         }
@@ -164,9 +166,7 @@ impl Level {
     fn add_room(&mut self, room: &Room) {
         self.rooms.push(room.clone());
         self.update_board();
-
     }
-
 }
 
 impl fmt::Display for Level {
@@ -175,12 +175,12 @@ impl fmt::Display for Level {
             for col in 0..self.width as usize {
                 write!(f, "{}", self.board[row][col])?
             }
+            write!(f, "\n")?
         }
 
         Ok(())
     }
 }
-
 
 #[derive(Debug, Clone, Copy, Eq, Ord, PartialEq, PartialOrd)]
 pub enum RoomDimensions {
@@ -200,7 +200,7 @@ impl RoomDimensions {
             RoomDimensions::Maint5x4 => 4,
             RoomDimensions::Maint10x5 => 5,
             RoomDimensions::Maint10x10 => 10,
-        } + 2 //add 2 because the dimensions are equal to the inside of the room, and we need the dimensions with the walls in mind
+        } + 2; //add 2 because the dimensions are equal to the inside of the room, and we need the dimensions with the walls in mind
     }
 
     fn get_width(&self) -> usize {
@@ -254,6 +254,7 @@ impl Room {
         self.x <= other.x2 && self.x2 >= other.x && self.y <= other.y2 && self.y2 >= other.y
     }
     pub fn get_distance_to(&self, other: &Point) -> usize {
-        (((other.x - self.center.x).pow(2) + (other.y - self.center.y).pow(2)) as f64).sqrt() as usize
+        (((other.x - self.center.x).pow(2) + (other.y - self.center.y).pow(2)) as f64).sqrt()
+            as usize
     }
 }

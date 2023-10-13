@@ -1,63 +1,80 @@
-use std::{fmt, cmp};
-use rand::distributions::WeightedIndex;
+use crate::error::Result;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rand::Rng;
 use serde::Serialize;
-use crate::error::Result;
+use std::{cmp, fmt};
 
 struct BspLevel {
     level: Level,
-    map_subsection_min_size: i32,
-    map_subsection_min_room_width: i32,
-    map_subsection_min_room_height: i32,
+    map_subsection_min_size: usize,
+    map_subsection_min_room_width: usize,
+    map_subsection_min_room_height: usize,
 }
-
 
 byond_fn!(fn bsp_generate(width, height, hash, map_subsection_min_size, map_subsection_min_room_width, map_subsection_min_room_height) {
     bsp_gen(width, height, hash, map_subsection_min_size, map_subsection_min_room_width, map_subsection_min_room_height).ok()
 });
 
-fn bsp_gen(width_as_str: &str,
+fn bsp_gen(
+    width_as_str: &str,
     height_as_str: &str,
     hash_as_str: &str,
     map_subsection_min_size_as_str: &str,
     map_subsection_min_room_width_as_str: &str,
-    map_subsection_min_room_height_as_str: &str)
-    -> Result<String>{
+    map_subsection_min_room_height_as_str: &str,
+) -> Result<String> {
     let default_hash: u64 = rand::thread_rng().gen();
-    let width = width_as_str.parse::<i32>()?;
-    let height = height_as_str.parse::<i32>()?;
-    let map_subsection_min_room_width = map_subsection_min_room_width_as_str.parse::<i32>()?;
-    let map_subsection_min_room_height = map_subsection_min_room_height_as_str.parse::<i32>()?;
+    let width = width_as_str.parse::<usize>()?;
+    let height = height_as_str.parse::<usize>()?;
+    let map_subsection_min_room_width = map_subsection_min_room_width_as_str.parse::<usize>()?;
+    let map_subsection_min_room_height = map_subsection_min_room_height_as_str.parse::<usize>()?;
 
+    //map subsections that the BSP algorithm creates should never be smaller than the minimum desired room size they will contain. This will crash the server
     let map_subsection_min_size = cmp::max(
-        map_subsection_min_size_as_str.parse::<i32>()?,
-        cmp::max(map_subsection_min_room_width, map_subsection_min_room_height) + 1
+        map_subsection_min_size_as_str.parse::<usize>()?,
+        cmp::max(
+            map_subsection_min_room_width,
+            map_subsection_min_room_height,
+        ) + 1,
     );
 
-    //let seed: &str = Alphanumeric.sample_string(&mut rand::thread_rng(), 32).as_str();
+    let mut rng: StdRng = SeedableRng::seed_from_u64(
+        hash_as_str
+            .parse::<usize>()?
+            .try_into()
+            .unwrap_or(default_hash),
+    );
 
-    let mut rng: StdRng = SeedableRng::seed_from_u64(hash_as_str.parse::<usize>()?.try_into().unwrap_or(default_hash));
+    let level = BspLevel::new(
+        width,
+        height,
+        &mut rng,
+        map_subsection_min_size,
+        map_subsection_min_room_width,
+        map_subsection_min_room_height,
+    );
 
-
-    let level = BspLevel::new(width, height, &mut rng, map_subsection_min_size, map_subsection_min_room_width, map_subsection_min_room_height);
-
-    Ok(serde_json::to_string(&level.all_rooms)?)
+    Ok(serde_json::to_string(&level.rooms)?)
 }
 
 impl BspLevel {
     fn new(
-        width: i32,
-        height: i32,
+        width: usize,
+        height: usize,
         rng: &mut StdRng,
-        map_subsection_min_size: i32,
-        map_subsection_min_room_width: i32,
-        map_subsection_min_room_height: i32,
+        map_subsection_min_size: usize,
+        map_subsection_min_room_width: usize,
+        map_subsection_min_room_height: usize,
     ) -> Level {
         let level = Level::new(width, height);
 
-        let mut map = BspLevel { level, map_subsection_min_size, map_subsection_min_room_width, map_subsection_min_room_height };
+        let mut map = BspLevel {
+            level,
+            map_subsection_min_size,
+            map_subsection_min_room_width,
+            map_subsection_min_room_height,
+        };
 
         map.place_rooms(rng);
 
@@ -65,7 +82,15 @@ impl BspLevel {
     }
 
     fn place_rooms(&mut self, rng: &mut StdRng) {
-        let mut root = Leaf::new(0, 0, self.level.width, self.level.height, self.map_subsection_min_size, self.map_subsection_min_room_width,self.map_subsection_min_room_height);
+        let mut root = Leaf::new(
+            0,
+            0,
+            self.level.width,
+            self.level.height,
+            self.map_subsection_min_size,
+            self.map_subsection_min_room_width,
+            self.map_subsection_min_room_height,
+        );
         root.generate(rng);
 
         root.create_rooms(rng);
@@ -73,7 +98,6 @@ impl BspLevel {
         for leaf in root.iter() {
             if leaf.is_leaf() {
                 if let Some(room) = leaf.get_room() {
-
                     self.level.add_room(&room);
                 }
             }
@@ -82,18 +106,17 @@ impl BspLevel {
                 self.level.add_room(&corridor);
             }
         }
-
     }
 }
 
 struct Leaf {
-    min_size: i32,
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32,
-    min_room_width: i32,
-    min_room_height: i32,
+    min_size: usize,
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
+    min_room_width: usize,
+    min_room_height: usize,
     left_child: Option<Box<Leaf>>,
     right_child: Option<Box<Leaf>>,
     room: Option<Room>,
@@ -101,7 +124,15 @@ struct Leaf {
 }
 
 impl Leaf {
-    fn new(x: i32, y: i32, width: i32, height: i32, min_size: i32, min_room_width: i32, min_room_height: i32,) -> Self {
+    fn new(
+        x: usize,
+        y: usize,
+        width: usize,
+        height: usize,
+        min_size: usize,
+        min_room_width: usize,
+        min_room_height: usize,
+    ) -> Self {
         Leaf {
             min_size,
             x,
@@ -223,22 +254,15 @@ impl Leaf {
             let height = rng.gen_range(self.min_room_height..=self.height);
             let x = rng.gen_range(0..=self.width - width);
             let y = rng.gen_range(0..=self.height - height);
-            let choices = [0, 4];
-            let weights = [1, 4];
-            let dist = WeightedIndex::new(&weights).unwrap();
-            let mut rng = thread_rng();
-            let room_layout = choices[dist.sample(&mut rng)];
 
             self.room = Some(Room::new(
-                format!("extra room"),
+                format!("bsp room"),
                 x + self.x,
                 y + self.y,
                 width,
                 height,
-                room_layout,
             ));
         }
-
     }
 
     fn get_room(&self) -> Option<Room> {
@@ -315,70 +339,67 @@ impl<'a> Iterator for LeafIterator<'a> {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum TileType {
+    Space = 0,
+    Floor = 1,
+    Wall = 2,
+}
 pub struct Level {
-    width: i32,
-    height: i32,
-    board: Vec<Vec<i32>>,
-    all_rooms: Vec<Room>,
-    increment: i32,
-    //hash: String,
+    width: usize,
+    height: usize,
+    board: Vec<Vec<usize>>,
+    rooms: Vec<Room>,
+    increment: usize,
 }
 
 impl Level {
-    fn new(
-        width: i32,
-        height: i32,
-    ) -> Self {
+    fn new(width: usize, height: usize) -> Self {
         let mut new_level = Level {
             width,
             height,
             board: Vec::new(),
-            all_rooms: Vec::new(),
+            rooms: Vec::new(),
             increment: 0,
         };
         new_level.update_board();
         new_level
     }
 
-    fn update_board(&mut self) -> Vec<Vec<i32>> {
+    fn update_board(&mut self) -> Vec<Vec<usize>> {
         let mut new_board = Vec::new();
-        self.increment+=1;
+        self.increment += 1;
         for _ in 0..self.height {
-            let space_tile = 0;
-            //let wall_tile = 1;
-            let floor_tile = 5;
             let gen_floor_first = true;
 
-            let mut row = vec![floor_tile; self.width as usize];
+            let mut row = vec![TileType::Floor as usize; self.width as usize];
             if !gen_floor_first {
-                row = vec![space_tile; self.width as usize];
+                row = vec![TileType::Space as usize; self.width as usize];
             }
 
             new_board.push(row);
         }
-        for room in &self.all_rooms {
+        for room in &self.rooms {
             for row in 0..room.height {
                 for col in 0..room.width {
                     let y = (room.y + row) as usize;
                     let x = (room.x + col) as usize;
                     if row == 0 || col == 0 || row == room.height - 1 || col == room.width - 1 {
                         // might just let byond handle the walls
-                        new_board[y][x] = 1;
+                        new_board[y][x] = TileType::Wall as usize;
                     } else {
-                        new_board[y][x] = room.room_type;
+                        new_board[y][x] = TileType::Floor as usize;
                     }
                 }
             }
         }
         self.board = new_board.clone();
-        //draw(self, "increments", &self.increment.to_string()).unwrap();
         new_board
     }
 
     fn add_room(&mut self, room: &Room) {
-        self.all_rooms.push(room.clone());
+        self.rooms.push(room.clone());
         self.update_board();
-
     }
 }
 
@@ -388,7 +409,7 @@ impl fmt::Display for Level {
             for col in 0..self.width as usize {
                 write!(f, "{}", self.board[row][col])?
             }
-            // write!(f, "\n")?
+            write!(f, "\n")?
         }
 
         Ok(())
@@ -397,25 +418,24 @@ impl fmt::Display for Level {
 
 #[derive(Debug, Clone, Copy, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Point {
-    x: i32,
-    y: i32,
+    x: usize,
+    y: usize,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Room {
     id: String,
-    x: i32,
-    y: i32,
-    x2: i32,
-    y2: i32,
-    width: i32,
-    height: i32,
+    x: usize,
+    y: usize,
+    x2: usize,
+    y2: usize,
+    width: usize,
+    height: usize,
     center: Point,
-    room_type: i32,
 }
 
 impl Room {
-    pub fn new(id: String, x: i32, y: i32, width: i32, height: i32, room_type: i32) -> Self {
+    pub fn new(id: String, x: usize, y: usize, width: usize, height: usize) -> Self {
         Room {
             id,
             x,
@@ -428,14 +448,14 @@ impl Room {
                 x: x + (width / 2),
                 y: y + (height / 2),
             },
-            room_type,
         }
     }
 
     pub fn intersects(&self, other: &Self) -> bool {
         self.x <= other.x2 && self.x2 >= other.x && self.y <= other.y2 && self.y2 >= other.y
     }
-    pub fn get_distance_to(&self, other: &Point) -> i32 {
-        (((other.x - self.center.x).pow(2) + (other.y - self.center.y).pow(2)) as f64).sqrt() as i32
+    pub fn get_distance_to(&self, other: &Point) -> usize {
+        (((other.x - self.center.x).pow(2) + (other.y - self.center.y).pow(2)) as f64).sqrt()
+            as usize
     }
 }
