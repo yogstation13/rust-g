@@ -13,6 +13,8 @@ mod jobs;
 
 #[cfg(feature = "acreplace")]
 pub mod acreplace;
+#[cfg(feature = "binary_space_partition")]
+pub mod binary_space_partition;
 #[cfg(feature = "cellularnoise")]
 pub mod cellularnoise;
 #[cfg(feature = "dbpnoise")]
@@ -37,6 +39,8 @@ pub mod log;
 pub mod noise_gen;
 #[cfg(feature = "pathfinder")]
 pub mod pathfinder;
+#[cfg(feature = "random_room_placement")]
+pub mod random_room_placement;
 #[cfg(feature = "redis_pubsub")]
 pub mod redis_pubsub;
 #[cfg(feature = "sql")]
