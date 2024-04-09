@@ -2005,7 +2005,7 @@ dependencies = [
 
 [[package]]
 name = "rust-g"
-version = "1.2.0-yogs1"
+version = "1.2.0-yogs2"
 dependencies = [
  "aho-corasick",
  "base64",
