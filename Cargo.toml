@@ -1,7 +1,7 @@
 [package]
 name = "rust-g"
 edition = "2021"
-version = "1.2.0-yogs2"
+version = "1.2.0-yogs2.1"
 authors = [
     "Bjorn Neergaard <bjorn@neersighted.com>",
     "Tad Hardesty <tad@platymuus.com>",
@@ -61,6 +61,7 @@ concat-string = { version = "1.0.1", optional = true }
 [features]
 default = [
     "acreplace",
+    "batchnoise",
     "binary_space_partition",
     "cellularnoise",
     "dmi",
@@ -75,10 +76,12 @@ default = [
     "time",
     "toml",
     "url",
+    "worleynoise",
 ]
 
 # default features
 acreplace = ["aho-corasick"]
+batchnoise = ["dbpnoise"]
 binary_space_partition = ["rand", "rayon", "serde", "serde_json", "sha2"]
 cellularnoise = ["rand", "rayon"]
 dmi = ["png", "image"]
@@ -92,9 +95,9 @@ sql = ["mysql", "serde", "serde_json", "once_cell", "dashmap", "jobs"]
 time = []
 toml = ["serde", "serde_json", "toml-dep"]
 url = ["url-dep", "percent-encoding"]
+worleynoise = ["rand", "rayon"]
 
 # additional features
-batchnoise = ["dbpnoise"]
 hash = [
     "base64",
     "const-random",
@@ -110,7 +113,6 @@ influxdb2 = ["concat-string", "serde", "serde_json", "http"]
 pathfinder = ["num", "pathfinding", "serde", "serde_json"]
 redis_pubsub = ["flume", "redis", "serde", "serde_json"]
 unzip = ["zip", "jobs"]
-worleynoise = ["rand", "rayon"]
 
 # internal feature-like things
 jobs = ["flume"]
